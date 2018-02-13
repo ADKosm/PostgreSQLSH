@@ -4,9 +4,14 @@
 CREATE OR REPLACE FUNCTION lsh()
     RETURNS text
     AS '$libdir/lsh', 'lsh'
-    LANGUAGE C IMMUTABLE STRICT;
+    LANGUAGE C STRICT IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION array_sum(anyarray)
     RETURNS float4
     AS '$libdir/lsh', 'array_sum'
+    LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION dot(anyarray, anyarray)
+    RETURNS float4
+    AS '$libdir/lsh', 'dot'
     LANGUAGE C STRICT IMMUTABLE;
