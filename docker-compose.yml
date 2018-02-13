@@ -1,0 +1,8 @@
+version: '3'
+services:
+  psdb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/lsh
