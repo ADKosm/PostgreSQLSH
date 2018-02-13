@@ -25,6 +25,8 @@
 
 PG_MODULE_MAGIC;
 
+static Oid FLOAT_ARRAY_ID = 700;
+
 static ProcTypeInfoData
 getInfo(Oid typid) {
   ProcTypeInfoData	info;
@@ -87,6 +89,26 @@ dot(PG_FUNCTION_ARGS) {
   pfree(a);
   pfree(b);
   PG_RETURN_FLOAT4(result);
+}
+
+PG_FUNCTION_INFO_V1(gauss_vector);
+Datum gauss_vector(PG_FUNCTION_ARGS);
+Datum
+gauss_vector(PG_FUNCTION_ARGS) {
+  int32 size = DatumGetInt32(PG_GETARG_DATUM(0));
+  ProcTypeInfoData info = getInfo(FLOAT_ARRAY_ID);
+  ArrayType* result;
+
+  Datum* data = palloc(sizeof(Datum) * size);
+
+  for(int32 i = 0; i < size; i++) {
+    data[i] = Float4GetDatum((float4) i);
+  }
+
+  result = construct_array(data, size, info.typid, info.typlen,
+    info.typbyval, info.typalign);
+
+  PG_RETURN_ARRAYTYPE_P(result);
 }
 
 
