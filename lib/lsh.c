@@ -21,11 +21,35 @@
 #include "utils/typcache.h"
 #include "utils/builtins.h"
 
+#include "math.h"
+#include "stdlib.h"
+#include "time.h"
+#include "stdio.h"
+
 // FIXME: some of this imports are useless. Remove they
 
 PG_MODULE_MAGIC;
 
 static Oid FLOAT_ARRAY_ID = 700;
+
+static bool isRandInit = false;
+
+static float4 gaussNumber() {
+  double u, v, r, c;
+
+  if(!isRandInit) {
+    srand(time(NULL));
+    isRandInit = true;
+  }
+
+  u = ((double) rand() / (RAND_MAX)) * 2 - 1;
+  v = ((double) rand() / (RAND_MAX)) * 2 - 1;
+  r = u * u + v * v;
+  if (r == 0 || r > 1) return gaussNumber();
+  c = sqrt(-2 * log(r) / r);
+
+  return (float4) (u * c);
+}
 
 static ProcTypeInfoData
 getInfo(Oid typid) {
@@ -102,7 +126,7 @@ gauss_vector(PG_FUNCTION_ARGS) {
   Datum* data = palloc(sizeof(Datum) * size);
 
   for(int32 i = 0; i < size; i++) {
-    data[i] = Float4GetDatum((float4) i);
+    data[i] = Float4GetDatum(gaussNumber());
   }
 
   result = construct_array(data, size, info.typid, info.typlen,
