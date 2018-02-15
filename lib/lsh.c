@@ -51,6 +51,14 @@ static float4 gaussNumber() {
   return (float4) (u * c);
 }
 
+static float4 uniformNumber(double scale) {
+  double u;
+
+  u = ((double) rand() / (RAND_MAX)) * scale;
+
+  return (float4) u;
+}
+
 static ProcTypeInfoData
 getInfo(Oid typid) {
   ProcTypeInfoData	info;
@@ -133,6 +141,16 @@ gauss_vector(PG_FUNCTION_ARGS) {
     info.typbyval, info.typalign);
 
   PG_RETURN_ARRAYTYPE_P(result);
+}
+
+PG_FUNCTION_INFO_V1(uniform_number);
+Datum uniform_number(PG_FUNCTION_ARGS);
+Datum
+uniform_number(PG_FUNCTION_ARGS) {
+  float4 limit = DatumGetFloat4(PG_GETARG_DATUM(0));
+  float4 result = uniformNumber(limit);
+
+  PG_RETURN_FLOAT4(result);
 }
 
 
