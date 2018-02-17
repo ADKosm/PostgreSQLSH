@@ -33,7 +33,6 @@
 PG_MODULE_MAGIC;
 
 static Oid FLOAT_ARRAY_ID = 700;
-static bool isRandInit = false;
 
 // ----------------------------
 
@@ -50,11 +49,6 @@ getInfo(Oid typid) {
 
 static float4 gaussNumber() {
   double u, v, r, c;
-
-  if(!isRandInit) {
-    srand(time(NULL));
-    isRandInit = true;
-  }
 
   u = ((double) rand() / (RAND_MAX)) * 2 - 1;
   v = ((double) rand() / (RAND_MAX)) * 2 - 1;
