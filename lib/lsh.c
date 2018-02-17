@@ -117,7 +117,7 @@ dot(PG_FUNCTION_ARGS) {
 
 /*
 Generate random vector with normal distribution N(0, 1)
-Needed for generate parameter `w`
+Is used to compute parameter `w`
 */
 PG_FUNCTION_INFO_V1(gauss_vector);
 Datum gauss_vector(PG_FUNCTION_ARGS);
@@ -141,7 +141,7 @@ gauss_vector(PG_FUNCTION_ARGS) {
 
 /*
 Generate random number with uniform dictribution between 0 and scale
-Needed for to generate parameter `b`
+Is used to generate parameter `b`
 */
 PG_FUNCTION_INFO_V1(uniform_number);
 Datum uniform_number(PG_FUNCTION_ARGS);
