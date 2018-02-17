@@ -28,11 +28,25 @@
 
 // FIXME: some of this imports are useless. Remove they
 
+// ----------------------------
+
 PG_MODULE_MAGIC;
 
 static Oid FLOAT_ARRAY_ID = 700;
-
 static bool isRandInit = false;
+
+// ----------------------------
+
+static ProcTypeInfoData
+getInfo(Oid typid) {
+  ProcTypeInfoData	info;
+
+  info.typid = typid;
+  info.typtype = get_typtype(typid);
+  get_typlenbyvalalign(typid, &info.typlen, &info.typbyval, &info.typalign);
+
+  return info;
+}
 
 static float4 gaussNumber() {
   double u, v, r, c;
@@ -59,18 +73,7 @@ static float4 uniformNumber(double scale) {
   return (float4) u;
 }
 
-static ProcTypeInfoData
-getInfo(Oid typid) {
-  ProcTypeInfoData	info;
-
-  info.typid = typid;
-  info.typtype = get_typtype(typid);
-  get_typlenbyvalalign(typid, &info.typlen, &info.typbyval, &info.typalign);
-
-  return info;
-}
-
-SimpleArray *
+static SimpleArray *
 ConvertToSimpleArray(Datum d) {
   ArrayType *a = DatumGetArrayTypeP(d);
   SimpleArray *s = palloc(sizeof(SimpleArray));
@@ -84,23 +87,12 @@ ConvertToSimpleArray(Datum d) {
   return s;
 }
 
+// --------------------------------
 
-PG_FUNCTION_INFO_V1(array_sum);
-Datum array_sum(PG_FUNCTION_ARGS);
-Datum
-array_sum(PG_FUNCTION_ARGS) {
-  SimpleArray *s = ConvertToSimpleArray(PG_GETARG_DATUM(0));
-
-  float4 result = 0;
-  for(Datum *it = s->elems; (it - s->elems) < s->nelems; it++) {
-    float4 item = DatumGetFloat4(*it);
-    result += item;
-  }
-
-  pfree(s);
-  PG_RETURN_FLOAT4(result);
-}
-
+/*
+Calculate dot product between two vectors
+Needed for combute <x, w>
+*/
 PG_FUNCTION_INFO_V1(dot);
 Datum dot(PG_FUNCTION_ARGS);
 Datum
@@ -123,6 +115,10 @@ dot(PG_FUNCTION_ARGS) {
   PG_RETURN_FLOAT4(result);
 }
 
+/*
+Generate random vector with normal distribution N(0, 1)
+Needed for generate parameter `w`
+*/
 PG_FUNCTION_INFO_V1(gauss_vector);
 Datum gauss_vector(PG_FUNCTION_ARGS);
 Datum
@@ -143,6 +139,10 @@ gauss_vector(PG_FUNCTION_ARGS) {
   PG_RETURN_ARRAYTYPE_P(result);
 }
 
+/*
+Generate random number with uniform dictribution between 0 and scale
+Needed for to generate parameter `b`
+*/
 PG_FUNCTION_INFO_V1(uniform_number);
 Datum uniform_number(PG_FUNCTION_ARGS);
 Datum
@@ -151,14 +151,4 @@ uniform_number(PG_FUNCTION_ARGS) {
   float4 result = uniformNumber(limit);
 
   PG_RETURN_FLOAT4(result);
-}
-
-
-PG_FUNCTION_INFO_V1(lsh);
-Datum
-lsh(PG_FUNCTION_ARGS) {
-    char text[7] = "bip-bup";
-    elog(NOTICE, "Work in progress. It's robot.");
-
-    PG_RETURN_TEXT_P(cstring_to_text(text));
 }

@@ -23,6 +23,11 @@ typedef struct SimpleArray {
   ProcTypeInfoData info;
 } SimpleArray;
 
-SimpleArray	* ConvertToSimpleArray(Datum d);
+
+static float4 uniformNumber(double scale);
+static float4 gaussNumber();
+
+static SimpleArray	* ConvertToSimpleArray(Datum d);
+
 
 #endif
