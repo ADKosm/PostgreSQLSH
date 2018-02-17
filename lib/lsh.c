@@ -81,8 +81,8 @@ ConvertToSimpleArray(Datum d) {
   ProcTypeInfoData info = getInfo(ARR_ELEMTYPE(a));
   s->info = info;
   deconstruct_array(a, info.typid,
-						info.typlen, info.typbyval, info.typalign,
-						&s->elems, NULL, &s->nelems);
+    info.typlen, info.typbyval, info.typalign,
+    &s->elems, NULL, &s->nelems);
 
   return s;
 }
