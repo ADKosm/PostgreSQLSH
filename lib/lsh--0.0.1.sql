@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION create_lsh_index(table_name text, column_name text, r
           EXECUTE format(vector_dim_template, column_name, table_name) INTO vector_length;
 
           rho_constant := ln(1/alpha_probability) / ln(1/betta_probability);
-          hash_dimention := ceil( ln(data_size) / ln( 1/betta_probability ) ) + 1;
+          hash_dimention := ceil( ln(data_size) / ln( 1/betta_probability ) );
           hash_size := ceil( 2 * power(data_size, rho_constant) );
 
           EXECUTE format(index_table_template, table_name, column_name);
@@ -83,5 +83,28 @@ CREATE OR REPLACE FUNCTION create_lsh_index(table_name text, column_name text, r
           END LOOP;
 
           RETURN True;
+        END;
+      $$;
+
+CREATE OR REPLACE FUNCTION lsh_hash(x float4[], table_name text, column_name text, outer_index integer)
+    RETURNS integer[]
+    LANGUAGE plpgsql IMMUTABLE STRICT
+      AS $$
+        DECLARE
+          result_hash integer[] := '{}';
+          select_params_template text := 'SELECT w, b, r FROM lsh_%s_%s
+          WHERE outer_index = $1 ORDER BY inner_index';
+
+          params RECORD;
+
+          i integer := 1; -- for iterating
+        BEGIN
+
+          FOR params IN EXECUTE format(select_params_template, table_name, column_name)
+          USING outer_index LOOP
+            result_hash[i] := lsh_hash_i(x, params.w, params.b, params.r);
+            i := i + 1;
+          END LOOP;
+          RETURN result_hash;
         END;
       $$;
