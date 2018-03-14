@@ -72,8 +72,8 @@ CREATE OR REPLACE FUNCTION create_lsh_index(table_name text, column_name text, r
           range_template text := 'SELECT generate_series(1, %d)';
           vector_dim_template text := 'SELECT array_length(%s, 1) FROM %s LIMIT 1';
 
-          create_index_template text := 'CREATE INDEX IF NOT EXISTS lsh_%s_%s_%s ON %s (lsh_hash(
-            $1::float4[], ''$2''::text, ''$3''::text, $4
+          create_index_template text := 'CREATE INDEX IF NOT EXISTS lsh_%1$s_%2$s_%3$s ON %1$s USING hash (lsh_hash(
+            %2$s::float4[], %1$L::text, %2$L::text, %3$s
           ))';
 
           hash_dimention integer;
@@ -112,8 +112,7 @@ CREATE OR REPLACE FUNCTION create_lsh_index(table_name text, column_name text, r
               j := j + 1;
             END LOOP;
 
-            EXECUTE format(create_index_template, table_name, column_name, i, table_name)
-            USING column_name, table_name, column_name, i;
+            EXECUTE format(create_index_template, table_name, column_name, i);
             i := i + 1;
           END LOOP;
 
@@ -122,19 +121,19 @@ CREATE OR REPLACE FUNCTION create_lsh_index(table_name text, column_name text, r
       $$;
 
 CREATE OR REPLACE FUNCTION lsh_nearest(x float4[], table_name text, column_name text)
-    RETURNS integer[]
+    RETURNS setof record
     LANGUAGE plpgsql IMMUTABLE STRICT
       AS $$
         DECLARE
           select_outer_indexes text := 'SELECT distinct outer_index FROM lsh_%s_%s';
           select_inner_filter text := ' SELECT * FROM %s where lsh_hash(
-            %s::float4[], ''%s''::text, ''%s''::text, %s::integer
+            ''%s''::float4[], ''%s''::text, ''%s''::text, %s::integer
           ) = lsh_hash(
             %s::float4[], ''%s''::text, ''%s''::text, %s::integer
           ) ';
           result_query text := '';
 
-          params RECORD;
+          params record;
 
           i integer := 0; -- for iterating
         BEGIN
@@ -147,6 +146,6 @@ CREATE OR REPLACE FUNCTION lsh_nearest(x float4[], table_name text, column_name 
                 column_name, i, column_name, table_name, column_name, i);
             i := i + 1;
           END LOOP;
-          RETURN result_query;
+          RETURN QUERY EXECUTE result_query;
         END;
       $$;
