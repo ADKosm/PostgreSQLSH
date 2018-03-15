@@ -6,6 +6,11 @@ CREATE OR REPLACE FUNCTION lsh_dot(anyarray, anyarray)
     AS '$libdir/lsh', 'dot'
     LANGUAGE C STRICT IMMUTABLE;
 
+CREATE OR REPLACE FUNCTION lsh_dist(anyarray, anyarray)
+    RETURNS float4
+    AS '$libdir/lsh', 'dist'
+    LANGUAGE C STRICT IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION lsh_gauss_vector(integer)
     RETURNS float4[]
     AS '$libdir/lsh', 'gauss_vector'
@@ -125,25 +130,26 @@ CREATE OR REPLACE FUNCTION lsh_nearest(x float4[], table_name text, column_name 
     LANGUAGE plpgsql IMMUTABLE STRICT
       AS $$
         DECLARE
+          select_radius text := 'SELECT r * r FROM lsh_%s_%s LIMIT 1';
           select_outer_indexes text := 'SELECT distinct outer_index FROM lsh_%s_%s';
-          select_inner_filter text := ' SELECT * FROM %s where lsh_hash(
-            ''%s''::float4[], ''%s''::text, ''%s''::text, %s::integer
+          select_inner_filter text := ' SELECT * FROM %1$s where lsh_hash(
+            ''%3$s''::float4[], ''%1$s''::text, ''%2$s''::text, %4$s::integer
           ) = lsh_hash(
-            %s::float4[], ''%s''::text, ''%s''::text, %s::integer
-          ) ';
+            %2$s::float4[], ''%1$s''::text, ''%2$s''::text, %4$s::integer
+          ) AND lsh_dist(%2$s::float4[], ''%3$s''::float4[]) < %5$s ';
           result_query text := '';
 
           params record;
 
+          r float4;
           i integer := 0; -- for iterating
         BEGIN
-
+          EXECUTE format(select_radius, table_name, column_name) INTO r;
           FOR params IN EXECUTE format(select_outer_indexes, table_name, column_name) LOOP
             if (i > 0) then
               result_query := result_query || ' UNION ';
             end if;
-              result_query := result_query || format(select_inner_filter, table_name, x, table_name, 
-                column_name, i, column_name, table_name, column_name, i);
+            result_query := result_query || format(select_inner_filter, table_name, column_name, x, i, r);
             i := i + 1;
           END LOOP;
           RETURN QUERY EXECUTE result_query;

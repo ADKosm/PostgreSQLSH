@@ -110,6 +110,31 @@ dot(PG_FUNCTION_ARGS) {
 }
 
 /*
+Calculate distance between two vectors
+*/
+PG_FUNCTION_INFO_V1(dist);
+Datum dist(PG_FUNCTION_ARGS);
+Datum
+dist(PG_FUNCTION_ARGS) {
+  SimpleArray *a = ConvertToSimpleArray(PG_GETARG_DATUM(0));
+  SimpleArray *b = ConvertToSimpleArray(PG_GETARG_DATUM(1));
+
+  // FIXME: validate arrays before computing (at least compare lenght)
+
+  float4 result = 0;
+  for(Datum *it_a = a->elems, *it_b = b->elems; (it_a - a->elems) < a->nelems; it_a++, it_b++) {
+    float4 item_a = DatumGetFloat4(*it_a);
+    float4 item_b = DatumGetFloat4(*it_b);
+
+    result += (item_a - item_b) * (item_a - item_b);
+  }
+
+  pfree(a);
+  pfree(b);
+  PG_RETURN_FLOAT4(result);
+}
+
+/*
 Generate random vector with normal distribution N(0, 1)
 Is used to compute parameter `w`
 */
